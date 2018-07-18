@@ -1,0 +1,62 @@
+---
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: team-viewer-deployment
+    labels:
+      app: team-viewer
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: team-viewer
+    template:
+      metadata:
+        labels:
+          app: team-viewer
+      spec:
+        containers:
+        - name: data-collector
+          image: rappdw/team-viewer-extract:latest
+          volumeMounts:
+          - name: data-volume
+            mountPath: /root/.local
+          - name: repo-access
+            mountPath: /root/.ssh
+            readOnly: true
+        - name: web-app
+          image: rappdw/team-viewer-notebook:latest
+          ports:
+          - containerPort: 8888
+          volumeMounts:
+          - mountPath: /home/jovyan/data
+            name: data-volume
+            subPath: share/cache/team-viewer
+        volumes:
+        - name: data-volume
+          hostPath:
+            path: /Users/drapp/.local
+            type: Directory
+        - name: repo-access
+          secret:
+            secretName: team-viewer-repo-access
+            defaultMode: 0700
+            items:
+            - key: ssh-privatekey
+              path: git_access
+            - key: known_hosts
+              path: known_hosts
+---
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: team-viewer
+    labels:
+      app: team-viewer
+  spec:
+    type: NodePort
+    ports:
+      - port: 8888
+        protocol: TCP
+    selector:
+      app: team-viewer
