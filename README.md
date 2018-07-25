@@ -1,5 +1,5 @@
-# Team Viewer - *"Analytic Insights into your Software Development Team"*
-Team Viewer is an application that provides insight into your software development team. It extracts data from
+# Team View - *Analytic Insights into your Software Development Team*
+Team View is an application that provides insight into your software development team. It extracts data from
 git (today) and other repositories (future) and makes that information available through Jupyter notebooks.
 
 ## Pre-requisites
