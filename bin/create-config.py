@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import os
 import shlex
 import subprocess
 import sys
+import shutil
 
 from pathlib import Path
 
@@ -14,6 +16,16 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--config_file", help="Configuration file", required=True)
     parser.add_argument("-m", "--mailmap_file", help="Mail map file")
     args = parser.parse_args()
+
+    os.makedirs(os.path.join(os.path.expanduser("~"), '.local/share/cache'), exist_ok=True)
+
+    if shutil.which('kubectl'):
+        kubectl = 'kubectl'
+    elif shutil.which('microk8s.kubectl'):
+        kubectl = 'microk8s.kubectl'
+    else:
+        print("Unable to find kubectl. Please ensure that kubernetes is propertly setup.")
+        sys.exit(-1)
 
     private_key = Path(args.key_file)
     if private_key.exists():
@@ -36,11 +48,11 @@ if __name__ == "__main__":
 
     mailmap_file = Path(args.mailmap_file)
 
-    subprocess.call(shlex.split("kubectl delete secret team-view-access"))
-    subprocess.call(shlex.split("kubectl delete configmap team-view-configuration"))
+    subprocess.call(shlex.split(f"{kubectl} delete secret team-view-access"))
+    subprocess.call(shlex.split(f"{kubectl} delete configmap team-view-configuration"))
 
     rc = subprocess.call(shlex.split(f"""
-kubectl create secret generic team-view-access --from-file=ssh-privatekey={private_key} --from-file=known_hosts={known_hosts} --from-file=config={config_file}
+{kubectl} create secret generic team-view-access --from-file=ssh-privatekey={private_key} --from-file=known_hosts={known_hosts} --from-file=config={config_file}
 """))
 
     if rc:
@@ -48,9 +60,9 @@ kubectl create secret generic team-view-access --from-file=ssh-privatekey={priva
 
     if mailmap_file.exists():
         sys.exit(subprocess.call(shlex.split(f"""
-        kubectl create configmap team-view-configuration --from-file=extract.json={config_file} --from-file=.mailmap={mailmap_file}
+        {kubectl} create configmap team-view-configuration --from-file=extract.json={config_file} --from-file=.mailmap={mailmap_file}
         """)))
     else:
         sys.exit(subprocess.call(shlex.split(f"""
-        kubectl create configmap team-view-configuration --from-file=extract.json={config_file}
+        {kubectl} create configmap team-view-configuration --from-file=extract.json={config_file}
         """)))
