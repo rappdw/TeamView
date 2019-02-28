@@ -30,6 +30,8 @@
           image: rappdw/team-view-notebook:latest
           ports:
           - containerPort: 8888
+            protocol: TCP
+            name: jupyter
           volumeMounts:
           - name: data-volume
             mountPath: /home/jovyan/project/data
@@ -38,9 +40,7 @@
             mountPath: /root/extract
         volumes:
         - name: data-volume
-          hostPath:
-            path: /Users/drapp/.local
-            type: Directory
+          emptyDir: {}
         - name: team-view-access
           secret:
             secretName: team-view-access
@@ -54,6 +54,25 @@
           configMap:
             name: team-view-configuration
 ---
+  apiVersion: extensions/v1beta1
+  kind: Ingress
+  metadata:
+    name: team-view
+    namespace: default
+    annotations:
+      kubernetes.io/ingress.class: traefik
+    labels:
+      app: team-view
+  spec:
+    rules:
+      - host: team-view.reserolabs.science
+        http:
+          paths:
+            - backend:
+                serviceName: team-view
+                servicePort: 80
+              path: /
+---
   apiVersion: v1
   kind: Service
   metadata:
@@ -61,9 +80,10 @@
     labels:
       app: team-view
   spec:
-    type: NodePort
+    type: ClusterIP
     ports:
-      - port: 8888
+      - port: 80
         protocol: TCP
+        targetPort: jupyter
     selector:
       app: team-view
