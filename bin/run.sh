@@ -10,8 +10,7 @@ if ! [ -x "$(command -v kubectl)" ]; then
 fi
 
 
-$KC_CMD delete -f team-view.yaml
+$KC_CMD delete -f team-view.yaml --all
 $KC_CMD create -f team-view.yaml
 sleep 30
-export NODE_PORT=$($KC_CMD get services/team-view -o go-template='{{(index .spec.ports 0).nodePort}}')
-open http://localhost:$NODE_PORT/lab
+open http://team-view.reserolabs.science/lab
